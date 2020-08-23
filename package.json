@@ -4,22 +4,57 @@
 	"description": "Make link to current file in Bitbucket Server",
 	"version": "0.0.1",
 	"engines": {
-		"vscode": "^1.48.0"
+		"vscode": "^1.40.0"
 	},
 	"categories": [
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:bitbucket-link.helloWorld"
+		"onCommand:bitbucket-link.linkToFile",
+		"onCommand:bitbucket-link.linkToRegion",
+		"onCommand:bitbucket-link.linkToFileOnBranch",
+		"onCommand:bitbucket-link.linkToRegionOnBranch"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "bitbucket-link.helloWorld",
-				"title": "Hello World"
+				"command": "bitbucket-link.linkToFile",
+				"title": "Bitbucket: Open link to file"
+			},
+			{
+				"command": "bitbucket-link.linkToRegion",
+				"title": "Bitbucket: Open link to selection"
+			},
+			{
+				"command": "bitbucket-link.linkToFileOnBranch",
+				"title": "Bitbucket: Open link to file on this branch"
+			},
+			{
+				"command": "bitbucket-link.linkToRegionOnBranch",
+				"title": "Bitbucket: Open link to selection on this branch"
 			}
-		]
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "bitbucket-link.linkToFile",
+					"when": "editorIsOpen"
+				},
+				{
+					"command": "bitbucket-link.linkToRegion",
+					"when": "editorIsOpen && editorHasSelection"
+				},
+				{
+					"command": "bitbucket-link.linkToFileOnBranch",
+					"when": "editorIsOpen"
+				},
+				{
+					"command": "bitbucket-link.linkToRegionOnBranch",
+					"when": "editorIsOpen && editorHasSelection"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run compile",
