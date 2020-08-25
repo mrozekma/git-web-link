@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { sep } from 'path';
 import { GitExtension } from './git';
-import { start } from 'repl';
 
 // https://github.com/microsoft/vscode/tree/master/extensions/git#api
 const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git')!.exports;
@@ -20,7 +19,6 @@ function findUrl(config: vscode.WorkspaceConfiguration, cloneUrl: string, filena
 		},
 		...config.get<UrlRule[]>('otherPatterns')!,
 	];
-	console.log(rules);
 	for(const rule of rules) {
 		if(rule.remotePattern?.length && rule.webUrls?.length) {
 			const m = cloneUrl.match(rule.remotePattern);
@@ -89,21 +87,21 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 
 	if(includeBranch === undefined && includeRegion === undefined) {
 		const picks: vscode.QuickPickItem[] = [{
-			label: 'Include Branch',
+			label: '$(git-pull-request) Include Branch',
 			description: 'Include current branch in URL',
 		}];
 		if(vscode.window.activeTextEditor?.selection) {
 			picks.push({
-				label: 'Include Selection',
+				label: '$(list-selection) Include Selection',
 				description: 'Include selected lines in URL',
 			});
 		}
 		picks.push({
-			label: 'Open',
+			label: '$(browser) Open',
 			description: 'Open URL in browser',
 			picked: true,
 		}, {
-			label: 'Copy',
+			label: '$(clippy) Copy',
 			description: 'Copy URL to clipboard',
 		});
 		vscode.window.showQuickPick(picks, {
@@ -115,7 +113,9 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 			let includeBranch = false, includeRegion = false;
 			const actions: string[] = [];
 			for(const { label } of values) {
-				switch(label) {
+				// Strip icon
+				const text = label.replace(/^\$\([^)]+\) /, '');
+				switch(text) {
 					case 'Include Branch':
 						includeBranch = true;
 						break;
@@ -124,7 +124,7 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 						break;
 					case 'Open':
 					case 'Copy':
-						actions.push(label);
+						actions.push(text);
 						break;
 				}
 			}
