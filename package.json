@@ -1,7 +1,7 @@
 {
-  "name": "bitbucket-link",
-	"displayName": "BitbucketLink",
-	"description": "Make link to current file in Bitbucket Server",
+  "name": "git-web-link",
+	"displayName": "Git Web Link",
+	"description": "Make link to current file in web-based Git file browser",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.40.0"
@@ -10,48 +10,109 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:bitbucket-link.linkToFile",
-		"onCommand:bitbucket-link.linkToRegion",
-		"onCommand:bitbucket-link.linkToFileOnBranch",
-		"onCommand:bitbucket-link.linkToRegionOnBranch"
+		"onCommand:gitWebLink.linkToFile",
+		"onCommand:gitWebLink.linkToRegion",
+		"onCommand:gitWebLink.linkToFileOnBranch",
+		"onCommand:gitWebLink.linkToRegionOnBranch",
+		"onCommand:gitWebLink.linkWizard"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "Git Web Link",
+			"properties": {
+				"gitWebLink.remotePattern": {
+					"type": "string",
+					"description": "Regular expression to match against a repository's remote fetch URL.",
+					"default": "git@github.com:([^/]+)/(.+)\\.git"
+				},
+				"gitWebLink.webUrls": {
+					"type": "array",
+					"items": { "type": "string" },
+					"markdownDescription": "Web URL that can be used to browse the file. The following variables can be included in the string:\n* `${filename}` -- The current filename relative to the repository root.\n* _`${branch}`_ -- The current Git branch.\n* _`${startLine}`_ -- The first line of the selection.\n* _`${endLine}`_ -- The last line of the selection.\n* `${<N>}` -- The Nth capture group in the `#gitWebLink.remotePattern#` (1-indexed).\n\nVariables in _italics_ are only available when using the appropriate command (e.g. `${branch}` when using **Link to file on this branch**). The first URL in the list with all variables available is used, so more comprehensive URLs should be listed first.",
+					"default": [
+						"https://github.com/${1}/${2}/blob/${branch}/${filename}#L${startLine}-L${endLine}",
+						"https://github.com/${1}/${2}/blob/${branch}/${filename}",
+						"https://github.com/${1}/${2}/blob/master/${filename}#L${startLine}-L${endLine}",
+						"https://github.com/${1}/${2}/blob/master/${filename}"
+					]
+				},
+				"gitWebLink.otherPatterns": {
+					"type": "array",
+					"markdownDescription": "Other remote patterns and the corresponding web URL(s). See `#gitWebLink.remotePattern#` and `#gitWebLink.webUrls#` for more information.",
+					"items": {
+						"type": "object",
+						"properties": {
+							"remotePattern": {
+								"type": "string",
+								"description": "Regular expression to match against a repository's remote fetch URL."
+							},
+							"webUrls": {
+								"type": "array",
+								"items": { "type": "string" },
+								"description": "Web URL that can be used to browse the file."
+							}
+						},
+						"required": [ "remotePattern", "webUrls" ],
+						"additionalProperties": false
+					}
+				},
+				"gitWebLink.defaultAction": {
+					"type": "string",
+					"description": "What action the link commands should take. (The link wizard will still prompt every time).",
+					"enum": [ "Open", "Copy", "Notify" ],
+					"enumDescriptions": [
+						"Open the link in your default browser. Note that Visual Studio Code will still prompt if you don't permanently allow the domain, and will offer to let you copy instead.",
+						"Copy the link to your clipboard.",
+						"Show a notification with options to open the link and copy it to your clipboard."
+					],
+					"default": "Open"
+				}
+			}
+		},
 		"commands": [
 			{
-				"command": "bitbucket-link.linkToFile",
-				"title": "Bitbucket: Open link to file"
+				"command": "gitWebLink.linkToFile",
+				"title": "Git Web Link: Link to file"
 			},
 			{
-				"command": "bitbucket-link.linkToRegion",
-				"title": "Bitbucket: Open link to selection"
+				"command": "gitWebLink.linkToRegion",
+				"title": "Git Web Link: Link to selection"
 			},
 			{
-				"command": "bitbucket-link.linkToFileOnBranch",
-				"title": "Bitbucket: Open link to file on this branch"
+				"command": "gitWebLink.linkToFileOnBranch",
+				"title": "Git Web Link: Link to file on this branch"
 			},
 			{
-				"command": "bitbucket-link.linkToRegionOnBranch",
-				"title": "Bitbucket: Open link to selection on this branch"
+				"command": "gitWebLink.linkToRegionOnBranch",
+				"title": "Git Web Link: Link to selection on this branch"
+			},
+			{
+				"command": "gitWebLink.linkWizard",
+				"title": "Git Web Link: Wizard"
 			}
 		],
 		"menus": {
 			"commandPalette": [
 				{
-					"command": "bitbucket-link.linkToFile",
+					"command": "gitWebLink.linkToFile",
 					"when": "editorIsOpen"
 				},
 				{
-					"command": "bitbucket-link.linkToRegion",
+					"command": "gitWebLink.linkToRegion",
 					"when": "editorIsOpen && editorHasSelection"
 				},
 				{
-					"command": "bitbucket-link.linkToFileOnBranch",
+					"command": "gitWebLink.linkToFileOnBranch",
 					"when": "editorIsOpen"
 				},
 				{
-					"command": "bitbucket-link.linkToRegionOnBranch",
+					"command": "gitWebLink.linkToRegionOnBranch",
 					"when": "editorIsOpen && editorHasSelection"
+				},
+				{
+					"command": "gitWebLink.linkWizard",
+					"when": "editorIsOpen"
 				}
 			]
 		}

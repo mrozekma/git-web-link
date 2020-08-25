@@ -1,18 +1,70 @@
 import * as vscode from 'vscode';
 import { sep } from 'path';
 import { GitExtension } from './git';
+import { start } from 'repl';
 
 // https://github.com/microsoft/vscode/tree/master/extensions/git#api
 const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git')!.exports;
 const git = gitExtension.getAPI(1);
-// const isWindows = process.platform === 'win32';
 
-function findUrlBase(cloneUrl: string): string | undefined {
-	// Elided; making configurable
-	return undefined;
+interface UrlRule {
+	remotePattern?: string;
+	webUrls?: string[];
 }
 
-function openLink(includeRegion: boolean, includeBranch: boolean) {
+function findUrl(config: vscode.WorkspaceConfiguration, cloneUrl: string, filename: string, branch: string | undefined, startLine: number | undefined, endLine: number | undefined): string {
+	const rules: UrlRule[] = [
+		{
+			remotePattern: config.get<string>('remotePattern'),
+			webUrls: config.get<string[]>('webUrls'),
+		},
+		...config.get<UrlRule[]>('otherPatterns')!,
+	];
+	console.log(rules);
+	for(const rule of rules) {
+		if(rule.remotePattern?.length && rule.webUrls?.length) {
+			const m = cloneUrl.match(rule.remotePattern);
+			if(m) {
+				for(const webUrl of rule.webUrls) {
+					try {
+						return webUrl.replace(/\${([^}]+)}/gi, (substr, name: string) => {
+							switch(name.toLowerCase()) {
+								case 'filename':
+									return filename;
+								case 'branch':
+									if(branch) {
+										return branch;
+									}
+									break;
+								case 'startline':
+									if(startLine) {
+										return `${startLine}`;
+									}
+									break;
+								case 'endline':
+									if(endLine) {
+										return `${endLine}`;
+									}
+									break;
+								default:
+									const num = +name;
+									if(!isNaN(num) && num >= 1 && num <= m.length) {
+										return m[num];
+									}
+									break;
+							}
+							throw new Error("Unsupported variable");
+						});
+					} catch(e) {}
+				}
+			}
+		}
+	}
+	throw new Error(`No pattern matches clone URL: ${cloneUrl}`);
+}
+
+function openLink(includeRegion: boolean | undefined, includeBranch: boolean | undefined, actions?: string[] | undefined) {
+	const config = vscode.workspace.getConfiguration('gitWebLink');
 	const filename = vscode.window.activeTextEditor?.document.fileName;
 	if(!filename) {
 		vscode.window.showErrorMessage("No file currently focused");
@@ -34,33 +86,98 @@ function openLink(includeRegion: boolean, includeBranch: boolean) {
 		vscode.window.showErrorMessage(`Unable to get fetch URL for remote '${remoteName}'`);
 		return;
 	}
-	const urlBase = findUrlBase(remoteUrl);
-	if(!urlBase) {
-		vscode.window.showErrorMessage(`Fetch URL for remote '${remoteName}' does not resemble a Bitbucket URL: ${remoteUrl}`);
+
+	if(includeBranch === undefined && includeRegion === undefined) {
+		const picks: vscode.QuickPickItem[] = [{
+			label: 'Include Branch',
+			description: 'Include current branch in URL',
+		}];
+		if(vscode.window.activeTextEditor?.selection) {
+			picks.push({
+				label: 'Include Selection',
+				description: 'Include selected lines in URL',
+			});
+		}
+		picks.push({
+			label: 'Open',
+			description: 'Open URL in browser',
+			picked: true,
+		}, {
+			label: 'Copy',
+			description: 'Copy URL to clipboard',
+		});
+		vscode.window.showQuickPick(picks, {
+			canPickMany: true,
+		}).then(values => {
+			if(values === undefined) {
+				return;
+			}
+			let includeBranch = false, includeRegion = false;
+			const actions: string[] = [];
+			for(const { label } of values) {
+				switch(label) {
+					case 'Include Branch':
+						includeBranch = true;
+						break;
+					case 'Include Selection':
+						includeRegion = true;
+						break;
+					case 'Open':
+					case 'Copy':
+						actions.push(label);
+						break;
+				}
+			}
+			openLink(includeRegion, includeBranch, actions);
+		});
 		return;
 	}
-	let url = `${urlBase}/${filename.substring(repoRoot.length).replace(/\\/g, '/')}`;
-	if(includeBranch && repo.state.HEAD?.name) {
-		url += `?at=refs/heads/${repo.state.HEAD.name}`;
+
+	if(actions === undefined) {
+		actions = [ config.get<string>('defaultAction')! ];
 	}
-	if(includeRegion) {
-		const lineRanges = vscode.window.activeTextEditor?.selections.map(sel => sel.isSingleLine ? `${sel.start.line + 1}` : `${sel.start.line + 1}-${sel.end.line + (sel.end.character === 0 ? 0 : 1)}`);
-		if(lineRanges) {
-			url += `#${lineRanges.join(',')}`;
-		}
+
+	let url;
+	try {
+		const stem = filename.substring(repoRoot.length).replace(/\\/g, '/');
+		const branch = includeBranch ? repo.state.HEAD?.name : undefined;
+		const sel = includeRegion ? vscode.window.activeTextEditor?.selection : undefined;
+		const startLine = sel ? sel.start.line + 1 : undefined;
+		const endLine = sel ? sel.end.line + (sel.end.character === 0 ? 0 : 1) : undefined;
+		url = findUrl(config, remoteUrl, stem, branch, startLine, endLine);
+	} catch(e) {
+		vscode.window.showErrorMessage(`${e}`);
+		return;
 	}
 	// console.log(url);
-	vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(url));
+	for(const action of actions) {
+		actOnUrl(url, action);
+	}
+}
+
+function actOnUrl(url: string, action: string) {
+	switch(action) {
+		case 'Copy':
+			vscode.env.clipboard.writeText(url).then(() => vscode.window.showInformationMessage("Git URL written to clipboard"));
+			break;
+		case 'Notify':
+			vscode.window.showInformationMessage(url, 'Open', 'Copy').then(action => action ? actOnUrl(url, action) : undefined);
+			break;
+		case 'Open':
+		default:
+			vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(url));
+			break;
+	}
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	const commands = [
-		vscode.commands.registerCommand('bitbucket-link.linkToFile',           () => openLink(false, false)),
-		vscode.commands.registerCommand('bitbucket-link.linkToRegion',         () => openLink(true,  false)),
-		vscode.commands.registerCommand('bitbucket-link.linkToFileOnBranch',   () => openLink(false, true )),
-		vscode.commands.registerCommand('bitbucket-link.linkToRegionOnBranch', () => openLink(true,  true )),
-	];
-	context.subscriptions.push(...commands);
+	context.subscriptions.push(
+		vscode.commands.registerCommand('gitWebLink.linkToFile',           () => openLink(false,     false    )),
+		vscode.commands.registerCommand('gitWebLink.linkToRegion',         () => openLink(true,      false    )),
+		vscode.commands.registerCommand('gitWebLink.linkToFileOnBranch',   () => openLink(false,     true     )),
+		vscode.commands.registerCommand('gitWebLink.linkToRegionOnBranch', () => openLink(true,      true     )),
+		vscode.commands.registerCommand('gitWebLink.linkWizard',           () => openLink(undefined, undefined)),
+	);
 }
 
 export function deactivate() {}

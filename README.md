@@ -1,6 +1,6 @@
-# bitbucket-link README
+# git-web-link README
 
-This is the README for your extension "bitbucket-link". After writing up a brief description, we recommend including the following sections.
+This is the README for your extension "git-web-link". After writing up a brief description, we recommend including the following sections.
 
 ## Features
 
