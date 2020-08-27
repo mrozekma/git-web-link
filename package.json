@@ -1,14 +1,29 @@
 {
-  "name": "git-web-link",
+	"name": "git-web-link",
 	"displayName": "Git Web Link",
-	"description": "Make link to current file in web-based Git file browser",
+	"description": "Makes a link to the current file in a web-based Git file browser",
+	"publisher": "mrozekma",
 	"version": "0.0.1",
+	"homepage": "https://github.com/mrozekma/git-web-link",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/mrozekma/git-web-link.git"
+	},
+	"bugs": {
+		"url": "https://github.com/mrozekma/git-web-link/issues"
+	},
+	"license": "MIT",
 	"engines": {
 		"vscode": "^1.40.0"
 	},
 	"categories": [
 		"Other"
 	],
+	"keywords": [
+		"git",
+		"link"
+	],
+	"preview": true,
 	"activationEvents": [
 		"onCommand:gitWebLink.linkToFile",
 		"onCommand:gitWebLink.linkToRegion",
@@ -28,7 +43,9 @@
 				},
 				"gitWebLink.webUrls": {
 					"type": "array",
-					"items": { "type": "string" },
+					"items": {
+						"type": "string"
+					},
 					"markdownDescription": "Web URL that can be used to browse the file. The following variables can be included in the string:\n* `${filename}` -- The current filename relative to the repository root.\n* _`${branch}`_ -- The current Git branch.\n* _`${startLine}`_ -- The first line of the selection.\n* _`${endLine}`_ -- The last line of the selection.\n* `${<N>}` -- The Nth capture group in the `#gitWebLink.remotePattern#` (1-indexed).\n\nVariables in _italics_ are only available when using the appropriate command (e.g. `${branch}` when using **Link to file on this branch**). The first URL in the list with all variables available is used, so more comprehensive URLs should be listed first.",
 					"default": [
 						"https://github.com/${1}/${2}/blob/${branch}/${filename}#L${startLine}-L${endLine}",
@@ -49,18 +66,27 @@
 							},
 							"webUrls": {
 								"type": "array",
-								"items": { "type": "string" },
+								"items": {
+									"type": "string"
+								},
 								"description": "Web URL that can be used to browse the file."
 							}
 						},
-						"required": [ "remotePattern", "webUrls" ],
+						"required": [
+							"remotePattern",
+							"webUrls"
+						],
 						"additionalProperties": false
 					}
 				},
 				"gitWebLink.defaultAction": {
 					"type": "string",
 					"description": "What action the link commands should take. (The link wizard will still prompt every time).",
-					"enum": [ "Open", "Copy", "Notify" ],
+					"enum": [
+						"Open",
+						"Copy",
+						"Notify"
+					],
 					"enumDescriptions": [
 						"Open the link in your default browser. Note that Visual Studio Code will still prompt if you don't permanently allow the domain, and will offer to let you copy instead.",
 						"Copy the link to your clipboard.",
@@ -100,7 +126,7 @@
 				},
 				{
 					"command": "gitWebLink.linkToRegion",
-					"when": "editorIsOpen && editorHasSelection"
+					"when": "editorIsOpen"
 				},
 				{
 					"command": "gitWebLink.linkToFileOnBranch",
@@ -108,7 +134,7 @@
 				},
 				{
 					"command": "gitWebLink.linkToRegionOnBranch",
-					"when": "editorIsOpen && editorHasSelection"
+					"when": "editorIsOpen"
 				},
 				{
 					"command": "gitWebLink.linkWizard",
@@ -126,13 +152,13 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.48.0",
 		"@types/glob": "^7.1.3",
 		"@types/mocha": "^8.0.0",
 		"@types/node": "^14.0.27",
-		"eslint": "^7.6.0",
+		"@types/vscode": "1.40.0",
 		"@typescript-eslint/eslint-plugin": "^3.8.0",
 		"@typescript-eslint/parser": "^3.8.0",
+		"eslint": "^7.6.0",
 		"glob": "^7.1.6",
 		"mocha": "^8.0.1",
 		"typescript": "^3.8.3",

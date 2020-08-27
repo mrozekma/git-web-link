@@ -1,65 +1,64 @@
-# git-web-link README
+# Git Web Link
 
-This is the README for your extension "git-web-link". After writing up a brief description, we recommend including the following sections.
+Git Web Link uses regular expressions to generate a URL given the current file and line in the active editor. In theory this URL points to a web-based repository browser that displays the code, so you can quickly generate a link to send to others.
 
-## Features
+For example, this line of the README generates a link to https://github.com/mrozekma/git-web-link/blob/master/README.md#L5-L5 :
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+![](readme-link.gif)
 
-For example if there is an image subfolder under your extension project workspace:
+## Configuration
 
-\!\[feature X\]\(images/feature-x.png\)
+Ultimately which remotes and web file browsers are supported is up to you.
+The default configuration is for Github, but you can replace it or add additional remotes/websites as needed.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+The settings UI itself contains detailed descriptions of each configuration key, but in short:
 
-## Requirements
+* **Remote Pattern** - A regular expression matched against the repository's remote URL.
+* **Web Urls** - A list of possible web URLs to display files in the given repository. The URLs can contain variables, only some of which may be available (depending on which Web Link command is being executed), and the first URL that only contains available variables is used.
+* **Other Patterns** - A list of other regular expressions and web URLs, if you need to support more than one remote.
+* **Default Action** - Which action the link commands should use. See the Actions section below.
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## Variables
 
-## Extension Settings
+The following variables are supported in web URLs:
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+| Name | Description |
+|-|-|
+| `filename` | The current filename |
+| `branch` | The Git branch the repository is currently on
+| `startLine` | The first line of the selection (or the current line)
+| `endLine` | The last line of the selection
+| *`N`* | An integer to select a capture group in the remote pattern
 
-For example:
+Variables in web URLs are formatted as `${name}`. For example, given the remote pattern:
 
-This extension contributes the following settings:
+    git@github.com:([^/]+)/(.+)\\.git
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+The corresponding web URL could be:
 
-## Known Issues
+    https://github.com/${1}/${2}/blob/${branch}/${filename}#L${startLine}-L${endLine}
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## Actions
 
-## Release Notes
+The link commands can each trigger one of the following actions:
 
-Users appreciate release notes as you update your extension.
+* **Open** - Open the link in a web browser. VSCode contains a security measure that prevents extensions from opening a link without permission, so you will get a popup dialog the first time (or every time, if you choose).
+* **Copy** - Copy the link to your clipboard.
+* **Notify** - Show a notification with buttons for the other actions so you can choose which you want on a case-by-case basis.
 
-### 1.0.0
+## Commands
 
-Initial release of ...
+Git Web Link provides a set of self-explanatory commands, all prefixed with **Git Web Link:**. The following variables are available for each command:
 
-### 1.0.1
+| Command | `filename` | `branch` | `startLine` | `endLine` |
+|-|-|-|-|-|
+| **Git Web Link: Link to file** | Yes | No | No | No |
+| **Git Web Link: Link to selection** | Yes | No | Yes | Yes |
+| **Git Web Link: Link to file on this branch** | Yes | Yes | No | No |
+| **Git Web Link: Link to selection on this branch** | Yes | Yes | Yes | Yes |
 
-Fixed issue #.
+The final command is **Git Web Link: Wizard**, which prompts if you want to include the branch and/or selection, and if you want to open and/or copy the resulting link:
 
-### 1.1.0
+![](wizard.png)
 
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+If you regularly need different commands but don't want to bind them all to different hotkeys or go into the command pane every time, you can just bind the wizard and use it every time.
