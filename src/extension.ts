@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { realpathSync } from 'fs';
 import { sep } from 'path';
 import { GitExtension } from './git';
 
@@ -63,11 +64,13 @@ function findUrl(config: vscode.WorkspaceConfiguration, cloneUrl: string, filena
 
 function openLink(includeRegion: boolean | undefined, includeBranch: boolean | undefined, actions?: string[] | undefined) {
 	const config = vscode.workspace.getConfiguration('gitWebLink');
-	const filename = vscode.window.activeTextEditor?.document.fileName;
+	let filename = vscode.window.activeTextEditor?.document.fileName;
 	if(!filename) {
 		vscode.window.showErrorMessage("No file currently focused");
 		return;
 	}
+	// git.getRepository() doesn't work on symlinks
+	filename = realpathSync(filename) || filename;
 	const repo = git.getRepository(vscode.Uri.file(filename));
 	if(!repo) {
 		vscode.window.showErrorMessage("File not part of a git repository");
