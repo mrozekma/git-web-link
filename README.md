@@ -26,6 +26,7 @@ The following variables are supported in web URLs:
 |-|-|
 | `filename` | The current filename |
 | `branch` | The Git branch the repository is currently on
+| `hash` | The Git commit hash the repository is currently at
 | `startLine` | The first line of the selection (or the current line)
 | `endLine` | The last line of the selection
 | *`N`* | An integer to select a capture group in the remote pattern
@@ -50,14 +51,16 @@ The link commands can each trigger one of the following actions:
 
 Git Web Link provides a set of self-explanatory commands, all prefixed with **Git Web Link:**. The following variables are available for each command:
 
-| Command | `filename` | `branch` | `startLine` | `endLine` |
+| Command | `filename` | `branch` | `hash` | `startLine` | `endLine` |
 |-|-|-|-|-|
-| **Git Web Link: Link to file** | Yes | No | No | No |
-| **Git Web Link: Link to selection** | Yes | No | Yes | Yes |
-| **Git Web Link: Link to file on this branch** | Yes | Yes | No | No |
-| **Git Web Link: Link to selection on this branch** | Yes | Yes | Yes | Yes |
+| **Git Web Link: Link to file** | Yes | No | No | No | No |
+| **Git Web Link: Link to selection** | Yes | No | No | Yes | Yes |
+| **Git Web Link: Link to file on this branch** | Yes | Yes | No | No | No |
+| **Git Web Link: Link to selection on this branch** | Yes | Yes | No | Yes | Yes |
+| **Git Web Link: Link to file at this hash** | Yes | Yes | Yes | No | No |
+| **Git Web Link: Link to selection at this hash** | Yes | Yes | Yes | Yes | Yes |
 
-The final command is **Git Web Link: Wizard**, which prompts if you want to include the branch and/or selection, and if you want to open and/or copy the resulting link:
+The final command is **Git Web Link: Wizard**, which prompts if you want to include the branch and/or hash and/or selection, and if you want to open and/or copy the resulting link:
 
 ![](wizard.png)
 

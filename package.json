@@ -29,6 +29,8 @@
 		"onCommand:gitWebLink.linkToRegion",
 		"onCommand:gitWebLink.linkToFileOnBranch",
 		"onCommand:gitWebLink.linkToRegionOnBranch",
+		"onCommand:gitWebLink.linkToFileAtHash",
+		"onCommand:gitWebLink.linkToRegionAtHash",
 		"onCommand:gitWebLink.linkWizard"
 	],
 	"main": "./out/extension.js",
@@ -46,8 +48,10 @@
 					"items": {
 						"type": "string"
 					},
-					"markdownDescription": "Web URL that can be used to browse the file. The following variables can be included in the string:\n* `${filename}` -- The current filename relative to the repository root.\n* _`${branch}`_ -- The current Git branch.\n* _`${startLine}`_ -- The first line of the selection.\n* _`${endLine}`_ -- The last line of the selection.\n* `${<N>}` -- The Nth capture group in the `#gitWebLink.remotePattern#` (1-indexed).\n\nVariables in _italics_ are only available when using the appropriate command (e.g. `${branch}` when using **Link to file on this branch**). The first URL in the list with all variables available is used, so more comprehensive URLs should be listed first.",
+					"markdownDescription": "Web URL that can be used to browse the file. The following variables can be included in the string:\n* `${filename}` -- The current filename relative to the repository root.\n* _`${branch}`_ -- The current Git branch.\n* _`${hash}`_ -- The current Git commit hash.\n* _`${startLine}`_ -- The first line of the selection.\n* _`${endLine}`_ -- The last line of the selection.\n* `${<N>}` -- The Nth capture group in the `#gitWebLink.remotePattern#` (1-indexed).\n\nVariables in _italics_ are only available when using the appropriate command (e.g. `${branch}` when using **Link to file on this branch**). The first URL in the list with all variables available is used, so more comprehensive URLs should be listed first.",
 					"default": [
+						"https://github.com/${1}/${2}/blob/${hash}/${filename}#L${startLine}-L${endLine}",
+						"https://github.com/${1}/${2}/blob/${hash}/${filename}",
 						"https://github.com/${1}/${2}/blob/${branch}/${filename}#L${startLine}-L${endLine}",
 						"https://github.com/${1}/${2}/blob/${branch}/${filename}",
 						"https://github.com/${1}/${2}/blob/master/${filename}#L${startLine}-L${endLine}",
@@ -99,23 +103,38 @@
 		"commands": [
 			{
 				"command": "gitWebLink.linkToFile",
-				"title": "Git Web Link: Link to file"
+				"category": "Git Web Link",
+				"title": "Link to file"
 			},
 			{
 				"command": "gitWebLink.linkToRegion",
-				"title": "Git Web Link: Link to selection"
+				"category": "Git Web Link",
+				"title": "Link to selection"
 			},
 			{
 				"command": "gitWebLink.linkToFileOnBranch",
-				"title": "Git Web Link: Link to file on this branch"
+				"category": "Git Web Link",
+				"title": "Link to file on this branch"
 			},
 			{
 				"command": "gitWebLink.linkToRegionOnBranch",
-				"title": "Git Web Link: Link to selection on this branch"
+				"category": "Git Web Link",
+				"title": "Link to selection on this branch"
+			},
+			{
+				"command": "gitWebLink.linkToFileAtHash",
+				"category": "Git Web Link",
+				"title": "Link to file at this commit hash"
+			},
+			{
+				"command": "gitWebLink.linkToRegionAtHash",
+				"category": "Git Web Link",
+				"title": "Link to selection at this commit hash"
 			},
 			{
 				"command": "gitWebLink.linkWizard",
-				"title": "Git Web Link: Wizard"
+				"category": "Git Web Link",
+				"title": "Wizard"
 			}
 		],
 		"menus": {
@@ -134,6 +153,14 @@
 				},
 				{
 					"command": "gitWebLink.linkToRegionOnBranch",
+					"when": "editorIsOpen"
+				},
+				{
+					"command": "gitWebLink.linkToFileAtHash",
+					"when": "editorIsOpen"
+				},
+				{
+					"command": "gitWebLink.linkToRegionAtHash",
 					"when": "editorIsOpen"
 				},
 				{

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { realpathSync } from 'fs';
 import { sep } from 'path';
 import { GitExtension } from './git';
+import { Hash } from 'crypto';
 
 // https://github.com/microsoft/vscode/tree/master/extensions/git#api
 const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git')!.exports;
@@ -12,7 +13,7 @@ interface UrlRule {
 	webUrls?: string[];
 }
 
-function findUrl(config: vscode.WorkspaceConfiguration, cloneUrl: string, filename: string, branch: string | undefined, startLine: number | undefined, endLine: number | undefined): string {
+function findUrl(config: vscode.WorkspaceConfiguration, cloneUrl: string, filename: string, branch: string | undefined, startLine: number | undefined, endLine: number | undefined, hash: string | undefined): string {
 	const rules: UrlRule[] = [
 		{
 			remotePattern: config.get<string>('remotePattern'),
@@ -45,6 +46,11 @@ function findUrl(config: vscode.WorkspaceConfiguration, cloneUrl: string, filena
 										return `${endLine}`;
 									}
 									break;
+								case 'hash':
+									if(hash) {
+										return hash;
+									}
+									break;
 								default:
 									const num = +name;
 									if(!isNaN(num) && num >= 1 && num <= m.length) {
@@ -62,8 +68,12 @@ function findUrl(config: vscode.WorkspaceConfiguration, cloneUrl: string, filena
 	throw new Error(`No pattern matches clone URL: ${cloneUrl}`);
 }
 
-function openLink(includeRegion: boolean | undefined, includeBranch: boolean | undefined, actions?: string[] | undefined) {
+function openLink(includeRegion: boolean | undefined, includeBranch: boolean | undefined, includeHash: boolean | undefined, actions?: string[] | undefined) {
 	const config = vscode.workspace.getConfiguration('gitWebLink');
+	if(vscode.window.activeTextEditor?.document.isUntitled) {
+		vscode.window.showErrorMessage("Current file is unsaved");
+		return;
+	}
 	let filename = vscode.window.activeTextEditor?.document.fileName;
 	if(!filename) {
 		vscode.window.showErrorMessage("No file currently focused");
@@ -88,10 +98,13 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 		return;
 	}
 
-	if(includeBranch === undefined && includeRegion === undefined) {
+	if(includeBranch === undefined && includeHash === undefined && includeRegion === undefined) {
 		const picks: vscode.QuickPickItem[] = [{
 			label: '$(git-pull-request) Include Branch',
 			description: 'Include current branch in URL',
+		}, {
+			label: '$(git-commit) Include Hash',
+			description: 'Include current commit hash in URL',
 		}];
 		if(vscode.window.activeTextEditor?.selection) {
 			picks.push({
@@ -113,7 +126,7 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 			if(values === undefined) {
 				return;
 			}
-			let includeBranch = false, includeRegion = false;
+			let includeBranch = false, includeHash = false, includeRegion = false;
 			const actions: string[] = [];
 			for(const { label } of values) {
 				// Strip icon
@@ -121,6 +134,9 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 				switch(text) {
 					case 'Include Branch':
 						includeBranch = true;
+						break;
+					case 'Include Hash':
+						includeHash = true;
 						break;
 					case 'Include Selection':
 						includeRegion = true;
@@ -131,7 +147,7 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 						break;
 				}
 			}
-			openLink(includeRegion, includeBranch, actions);
+			openLink(includeRegion, includeBranch, includeHash, actions);
 		});
 		return;
 	}
@@ -144,16 +160,15 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 	try {
 		const stem = filename.substring(repoRoot.length).replace(/\\/g, '/');
 		const branch = includeBranch ? repo.state.HEAD?.name : undefined;
+		const hash = includeHash ? repo.state.HEAD?.commit : undefined;
 		const sel = includeRegion ? vscode.window.activeTextEditor?.selection : undefined;
-		console.log(sel);
 		const startLine = sel ? sel.start.line + 1 : undefined;
 		const endLine = sel ? sel.end.line + (sel.start.line > sel.end.line && sel.end.character === 0 ? 0 : 1) : undefined;
-		url = findUrl(config, remoteUrl, stem, branch, startLine, endLine);
+		url = findUrl(config, remoteUrl, stem, branch, startLine, endLine, hash);
 	} catch(e) {
 		vscode.window.showErrorMessage(`${e}`);
 		return;
 	}
-	// console.log(url);
 	for(const action of actions) {
 		actOnUrl(url, action);
 	}
@@ -176,11 +191,13 @@ function actOnUrl(url: string, action: string) {
 
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
-		vscode.commands.registerCommand('gitWebLink.linkToFile',           () => openLink(false,     false    )),
-		vscode.commands.registerCommand('gitWebLink.linkToRegion',         () => openLink(true,      false    )),
-		vscode.commands.registerCommand('gitWebLink.linkToFileOnBranch',   () => openLink(false,     true     )),
-		vscode.commands.registerCommand('gitWebLink.linkToRegionOnBranch', () => openLink(true,      true     )),
-		vscode.commands.registerCommand('gitWebLink.linkWizard',           () => openLink(undefined, undefined)),
+		vscode.commands.registerCommand('gitWebLink.linkToFile',           () => openLink(false,     false,     false)),
+		vscode.commands.registerCommand('gitWebLink.linkToRegion',         () => openLink(true,      false,     false)),
+		vscode.commands.registerCommand('gitWebLink.linkToFileOnBranch',   () => openLink(false,     true,      false)),
+		vscode.commands.registerCommand('gitWebLink.linkToRegionOnBranch', () => openLink(true,      true,      false)),
+		vscode.commands.registerCommand('gitWebLink.linkToFileAtHash',     () => openLink(false,     true,      true)),
+		vscode.commands.registerCommand('gitWebLink.linkToRegionAtHash',   () => openLink(true,      true,      true)),
+		vscode.commands.registerCommand('gitWebLink.linkWizard',           () => openLink(undefined, undefined, undefined)),
 	);
 }
 
