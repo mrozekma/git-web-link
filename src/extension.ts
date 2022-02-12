@@ -163,7 +163,7 @@ function openLink(includeRegion: boolean | undefined, includeBranch: boolean | u
 		const hash = includeHash ? repo.state.HEAD?.commit : undefined;
 		const sel = includeRegion ? vscode.window.activeTextEditor?.selection : undefined;
 		const startLine = sel ? sel.start.line + 1 : undefined;
-		const endLine = sel ? sel.end.line + (sel.start.line > sel.end.line && sel.end.character === 0 ? 0 : 1) : undefined;
+		const endLine = sel ? sel.end.line + (sel.start.line < sel.end.line && sel.end.character === 0 ? 0 : 1) : undefined;
 		url = findUrl(config, remoteUrl, stem, branch, startLine, endLine, hash);
 	} catch(e) {
 		vscode.window.showErrorMessage(`${e}`);
