@@ -3,7 +3,7 @@
 	"displayName": "Git Web Link",
 	"description": "Makes a link to the current file in a web-based Git file browser",
 	"publisher": "mrozekma",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"homepage": "https://github.com/mrozekma/git-web-link",
 	"repository": {
 		"type": "git",
